@@ -8,6 +8,7 @@
 #include "file_formats/pc_board.h"
 #include "file_formats/tundra_draw.h"
 #include "file_formats/xbin.h"
+#include <cstring>
 
 textmode_t::textmode_t()
 {
@@ -72,7 +73,7 @@ textmode_type_t check_extension(const std::string& filename)
 
 textmode_t load_artwork(std::string filename)
 {
-    std::ifstream ifs(filename, std::ios_base::binary);
+    std::ifstream ifs(filename, std::ios_base::in | std::ios_base::binary);
     if(!ifs || ifs.bad()) {
         throw std::exception();
     }

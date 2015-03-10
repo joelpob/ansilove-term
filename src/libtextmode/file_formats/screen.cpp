@@ -1,4 +1,5 @@
 #include "screen.h"
+#include <algorithm>
 
 void serial_screen_t::putc(const uint8_t& code)
 {

@@ -1,6 +1,8 @@
 #include "sauce.h"
 #include "utf8.h"
 #include <iomanip>
+#include <cstring>
+#include <algorithm>
 
 class sauce_data_t
 {
@@ -84,13 +86,10 @@ size_t get_file_size(std::ifstream& ifs)
 
 size_t get_file_size(std::ifstream& ifs, const uint8_t& comment_lines)
 {
-    size_t sauce_size, pos;
-    uint8_t eof;
+    size_t sauce_size;
     sauce_size = (comment_lines > 0) ? 5 + 64 * comment_lines + 129 : 129;
     ifs.seekg(-sauce_size, std::ios_base::end);
-    pos = ifs.tellg();
-    read(ifs, eof);
-    return (eof == 0x1a) ? pos : pos + 1;
+    return ifs.tellg();
 }
 
 sauce_data_t::sauce_data_t()

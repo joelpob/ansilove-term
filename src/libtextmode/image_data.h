@@ -2,6 +2,8 @@
 #define SCREEN_DATA_H
 
 #include <vector>
+#include <cstddef>
+#include <cstdint>
 
 struct lab_t
 {

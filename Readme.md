@@ -6,6 +6,8 @@ Ansilove-Term is a command line tool to display text-mode art files in an XTerm-
 
 # Building
 
+The code leverages some of the nicer features of modern C++, so you may have to update your compiler in order to support `C++1Y`.
+
     make
 
 # Usage
