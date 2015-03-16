@@ -1,9 +1,9 @@
 #ifndef TEXTMODE_H
 #define TEXTMODE_H
 
-#include <fstream>
 #include "sauce.h"
 #include "image_data.h"
+#include "file.h"
 
 class file_format_not_recognized_t : public std::exception {};
 
@@ -24,8 +24,7 @@ enum class textmode_type_t
 class textmode_t
 {
 public:
-    textmode_t();
-    textmode_t(std::ifstream&);
+    textmode_t(const std::string& filename);
 
     sauce_t sauce;
     options_t options;

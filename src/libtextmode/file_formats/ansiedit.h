@@ -6,7 +6,7 @@
 class ansiedit_t : public textmode_t
 {
 public:
-    ansiedit_t(std::ifstream&);
+    ansiedit_t(const std::string&);
 };
 
 #endif

@@ -6,7 +6,7 @@
 class ansi_t : public textmode_t
 {
 public:
-    ansi_t(std::ifstream&);
+    ansi_t(const std::string&);
 };
 
 #endif

@@ -6,7 +6,7 @@
 class artworx_t : public textmode_t
 {
 public:
-    artworx_t(std::ifstream&);
+    artworx_t(const std::string&);
 };
 
 #endif

@@ -6,7 +6,7 @@
 class tundra_draw_t : public textmode_t
 {
 public:
-    tundra_draw_t(std::ifstream&);
+    tundra_draw_t(const std::string&);
 };
 
 #endif

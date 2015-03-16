@@ -1,4 +1,3 @@
-#include <iostream>
 #include "../textmode.h"
 #include "pc_board.h"
 #include "screen.h"
@@ -29,23 +28,14 @@ void pc_board_tokens_t::push(const uint8_t& literal)
     literals.push_back(literal);
 }
 
-inline void read(std::ifstream& ifs, uint8_t& data)
-{
-    ifs.read(reinterpret_cast<char*>(&data), 1);
-    if(ifs.fail()) {
-        ifs.clear();
-        throw std::exception();
-    }
-}
-
-pc_board_tokens_t tokenize_pc_board_file(std::ifstream& ifs, const size_t& file_size)
+pc_board_tokens_t tokenize_pc_board_file(file_t& file, const size_t& file_size)
 {
     pc_board_tokens_t pc_board_tokens;
     uint8_t byte;
     std::string string;
     bool escape_mode = false;
     for(size_t i = 0; i < file_size; ++i) {
-        read(ifs, byte);
+        byte = file.read_byte();
         if(byte == 0x1a) {
             break;
         }
@@ -64,11 +54,8 @@ pc_board_tokens_t tokenize_pc_board_file(std::ifstream& ifs, const size_t& file_
             if(escape_mode && string.empty()) {
                 string += byte;
 
-                read(ifs, byte);
-                string += byte;
-
-                read(ifs, byte);
-                string += byte;
+                string += file.read_byte();
+                string += file.read_byte();
 
                 pc_board_tokens.push(string);
                 string.clear();
@@ -107,10 +94,10 @@ inline uint8_t from_hex(const char& character)
     }
 }
 
-image_data_t read_pc_board_file(std::ifstream& ifs, const size_t& file_size, const size_t& columns)
+image_data_t read_pc_board_file(file_t& file, const size_t& file_size, const size_t& columns)
 {
     ansi_screen_t screen(columns == 0 ? 80 : columns);
-    auto pc_board_tokens = tokenize_pc_board_file(ifs, file_size);
+    auto pc_board_tokens = tokenize_pc_board_file(file, file_size);
     size_t lit_pos = 0;
     size_t seq_pos = 0;
     for(const auto& type:pc_board_tokens.types) {
@@ -140,10 +127,11 @@ image_data_t read_pc_board_file(std::ifstream& ifs, const size_t& file_size, con
     return screen.get_image_data();
 }
 
-pc_board_t::pc_board_t(std::ifstream& ifs)
-    : textmode_t(ifs)
+pc_board_t::pc_board_t(const std::string& filename)
+    : textmode_t(filename)
 {
-    image_data = read_pc_board_file(ifs, sauce.file_size, size_t(sauce.columns));
+    file_t file(filename);
+    image_data = read_pc_board_file(file, sauce.file_size, size_t(sauce.columns));
     image_data.palette = create_binary_text_palette();
     options.palette_type = palette_type_t::binary_text;
     type = textmode_type_t::pc_board;

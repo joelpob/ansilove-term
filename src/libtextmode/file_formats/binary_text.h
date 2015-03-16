@@ -6,7 +6,7 @@
 class binary_text_t : public textmode_t
 {
 public:
-    binary_text_t(std::ifstream&);
+    binary_text_t(const std::string&);
 };
 
 #endif

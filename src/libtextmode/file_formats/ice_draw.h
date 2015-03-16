@@ -6,7 +6,7 @@
 class ice_draw_t : public textmode_t
 {
 public:
-    ice_draw_t(std::ifstream&);
+    ice_draw_t(const std::string&);
 };
 
 #endif

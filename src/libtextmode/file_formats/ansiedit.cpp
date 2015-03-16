@@ -1,24 +1,7 @@
 #include "../textmode.h"
 #include "ansiedit.h"
 #include "screen.h"
-#include <iostream>
 #include <math.h>
-
-inline void read(std::ifstream& ifs, uint8_t& data)
-{
-    ifs.read(reinterpret_cast<char*>(&data), 1);
-    if(ifs.fail()) {
-        ifs.clear();
-        throw std::exception();
-    }
-}
-
-inline void read(std::ifstream& ifs, std::vector<uint8_t>& data_vector)
-{
-    for(auto& data:data_vector) {
-        read(ifs, data);
-    }
-}
 
 struct ansiedit_block_t {
     std::string id;
@@ -177,10 +160,10 @@ void decode_metadata(const ansiedit_block_t& block, std::string& title, std::str
     }
 }
 
-image_data_t read_ansiedit_file(std::ifstream& ifs, const size_t& file_size, options_t& options, std::string& title, std::string& author, std::string& group)
+image_data_t read_ansiedit_file(file_t& file, const size_t& file_size, options_t& options, std::string& title, std::string& author, std::string& group)
 {
     std::vector<uint8_t> data(file_size);
-    read(ifs, data);
+    file.read_bytes(data);
     auto parent = parse_block(data);
     ansiedit_block_t child;
     image_data_t image_data;
@@ -208,9 +191,10 @@ image_data_t read_ansiedit_file(std::ifstream& ifs, const size_t& file_size, opt
     return std::move(image_data);
 }
 
-ansiedit_t::ansiedit_t(std::ifstream& ifs)
-    : textmode_t(ifs)
+ansiedit_t::ansiedit_t(const std::string& filename)
+    : textmode_t(filename)
 {
-    image_data = read_ansiedit_file(ifs, sauce.file_size, options, title, author, group);
+    file_t file(filename);
+    image_data = read_ansiedit_file(file, sauce.file_size, options, title, author, group);
     type = textmode_type_t::ansiedit;
 }

@@ -3,12 +3,13 @@
 #include <iomanip>
 #include <cstring>
 #include <algorithm>
+#include "file.h"
 
 class sauce_data_t
 {
 public:
     sauce_data_t();
-    sauce_data_t(std::ifstream&);
+    sauce_data_t(const std::string&);
 
     bool exists;
     size_t actual_file_size;
@@ -21,75 +22,29 @@ public:
     std::vector<std::vector<uint8_t>> comments;
 };
 
-inline std::string get_string(std::ifstream& ifs, const size_t& length)
+bool has_sauce_header(file_t& file)
 {
-    char bytes[length];
-    ifs.read(bytes, length);
-    if(ifs.fail()) {
-        ifs.clear();
-        return std::string();
-    }
-    return std::string{bytes, length};
+    file.seek_from_end(128);
+    return file.read_string(5) == "SAUCE";
 }
 
-bool has_sauce_header(std::ifstream& ifs)
+bool has_comment_header(file_t& file, const uint8_t& comment_lines)
 {
-    ifs.seekg(-128, std::ios_base::end);
-    return get_string(ifs, 5) == "SAUCE";
+    file.seek_from_end(128 + 5 + 64 * comment_lines);
+    return file.read_string(5) == "COMNT";
 }
 
-bool has_comment_header(std::ifstream& ifs, const uint8_t& comment_lines)
+size_t get_file_size(file_t& file)
 {
-    ifs.seekg(-(128 + 5 + 64 * comment_lines), std::ios_base::end);
-    return get_string(ifs, 5) == "COMNT";
+    file.seek_from_end(0);
+    return file.tell();
 }
 
-inline void read(std::ifstream& ifs, uint8_t& data)
+size_t get_file_size(file_t& file, const uint8_t& comment_lines)
 {
-    ifs.read(reinterpret_cast<char*>(&data), 1);
-    if(ifs.fail()) {
-        ifs.clear();
-        throw std::exception();
-    }
-}
-
-inline void read(std::ifstream& ifs, uint16_t& data)
-{
-    uint8_t data_buffer[2];
-    read(ifs, data_buffer[0]);
-    read(ifs, data_buffer[1]);
-    data = data_buffer[0] + (data_buffer[1] << 8);
-}
-
-inline void read(std::ifstream& ifs, uint32_t& data)
-{
-    uint8_t data_buffer[4];
-    read(ifs, data_buffer[0]);
-    read(ifs, data_buffer[1]);
-    read(ifs, data_buffer[2]);
-    read(ifs, data_buffer[3]);
-    data = data_buffer[0] + (data_buffer[1] << 8) + (data_buffer[2] << 16) + (data_buffer[3] << 24);
-}
-
-inline void read(std::ifstream& ifs, std::vector<uint8_t>& data_vector)
-{
-    for(auto& data:data_vector) {
-        read(ifs, data);
-    }
-}
-
-size_t get_file_size(std::ifstream& ifs)
-{
-    ifs.seekg(0, std::ios_base::end);
-    return ifs.tellg();
-}
-
-size_t get_file_size(std::ifstream& ifs, const uint8_t& comment_lines)
-{
-    size_t sauce_size;
-    sauce_size = (comment_lines > 0) ? 5 + 64 * comment_lines + 129 : 129;
-    ifs.seekg(-sauce_size, std::ios_base::end);
-    return ifs.tellg();
+    size_t sauce_size = (comment_lines > 0) ? 5 + 64 * comment_lines + 129 : 129;
+    file.seek_from_end(sauce_size);
+    return file.tell();
 }
 
 sauce_data_t::sauce_data_t()
@@ -98,43 +53,44 @@ sauce_data_t::sauce_data_t()
     exists = false;
 }
 
-sauce_data_t::sauce_data_t(std::ifstream& ifs)
+sauce_data_t::sauce_data_t(const std::string& filename)
     : sauce_data_t()
 {
+    file_t file(filename);
     try {
-        exists = has_sauce_header(ifs);
+        exists = has_sauce_header(file);
         if(!exists) {
-            actual_file_size = get_file_size(ifs);
+            actual_file_size = get_file_size(file);
         } else {
-            read(ifs, version);
-            read(ifs, title);
-            read(ifs, author);
-            read(ifs, group);
-            read(ifs, year);
-            read(ifs, month);
-            read(ifs, day);
-            read(ifs, file_size);
-            read(ifs, data_type);
-            read(ifs, file_type);
-            read(ifs, t_info_1);
-            read(ifs, t_info_2);
-            read(ifs, t_info_3);
-            read(ifs, t_info_4);
-            read(ifs, comment_lines);
-            read(ifs, t_flags);
-            read(ifs, t_info_s);
-            if(comment_lines > 0 && has_comment_header(ifs, comment_lines)) {
+            file.read_bytes(version);
+            file.read_bytes(title);
+            file.read_bytes(author);
+            file.read_bytes(group);
+            file.read_bytes(year);
+            file.read_bytes(month);
+            file.read_bytes(day);
+            file_size = file.read_32_bit_word();
+            data_type = file.read_byte();
+            file_type = file.read_byte();
+            t_info_1 = file.read_16_bit_word();
+            t_info_2 = file.read_16_bit_word();
+            t_info_3 = file.read_16_bit_word();
+            t_info_4 = file.read_16_bit_word();
+            comment_lines = file.read_byte();
+            t_flags = file.read_byte();
+            file.read_bytes(t_info_s);
+            if(comment_lines > 0 && has_comment_header(file, comment_lines)) {
                 for(size_t i = 0; i < comment_lines; ++i) {
                     std::vector<uint8_t> comment(64);
-                    read(ifs, comment);
+                    file.read_bytes(comment);
                     comments.push_back(std::move(comment));
                 }
             }
-            actual_file_size = get_file_size(ifs, comment_lines);
+            actual_file_size = get_file_size(file, comment_lines);
         }
-        ifs.seekg(0, std::ios_base::beg);
     } catch(std::exception e) {
         exists = false;
+        actual_file_size = get_file_size(file);
     }
 }
 
@@ -741,28 +697,9 @@ std::vector<uint8_t>& trim(std::vector<uint8_t>& vector)
     return vector;
 }
 
-sauce_t::sauce_t()
+sauce_t::sauce_t(const std::string& filename)
 {
-    exists = true;
-    file_size = 0;
-    data_type = data_type_t::undefined;
-    file_type = file_type_t::undefined;
-    columns = 0;
-    rows = 0;
-    width = 0;
-    height = 0;
-    colors = 0;
-    depth = 0;
-    sample_rate = 0;
-    non_blink = non_blink_t::undefined;
-    letter_space = letter_space_t::undefined;
-    aspect_ratio = aspect_ratio_t::undefined;
-    font_type = font_type_t::undefined;
-}
-
-bool sauce_t::load(std::ifstream& ifs)
-{
-    sauce_data_t data(ifs);
+    sauce_data_t data(filename);
     exists = data.exists;
     file_size = data.actual_file_size;
     if(exists) {
@@ -893,7 +830,6 @@ bool sauce_t::load(std::ifstream& ifs)
             comments.push_back(cp_437_to_utf8_string(i));
         }
     }
-    return exists;
 }
 
 template <typename T>

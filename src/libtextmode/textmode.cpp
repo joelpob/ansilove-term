@@ -10,15 +10,9 @@
 #include "file_formats/xbin.h"
 #include <cstring>
 
-textmode_t::textmode_t()
+textmode_t::textmode_t(const std::string& filename)
+    : sauce(filename)
 {
-    type = textmode_type_t::undefined;
-}
-
-textmode_t::textmode_t(std::ifstream& ifs)
-    : textmode_t()
-{
-    sauce.load(ifs);
     options = sauce.get_options();
 
     if(!sauce.title.empty()) {
@@ -73,31 +67,26 @@ textmode_type_t check_extension(const std::string& filename)
 
 textmode_t load_artwork(std::string filename)
 {
-    std::ifstream ifs(filename, std::ios_base::in | std::ios_base::binary);
-    if(!ifs || ifs.bad()) {
-        throw std::exception();
-    }
     auto textmode_type = check_extension(filename);
-    textmode_t textmode;
     switch(textmode_type) {
     case textmode_type_t::ansiedit:
-        return ansiedit_t(ifs);
+        return ansiedit_t(filename);
     case textmode_type_t::artworx:
-        return artworx_t(ifs);
+        return artworx_t(filename);
     case textmode_type_t::binary_text:
-        return binary_text_t(ifs);
+        return binary_text_t(filename);
     case textmode_type_t::ice_draw:
-        return ice_draw_t(ifs);
+        return ice_draw_t(filename);
     case textmode_type_t::pc_board:
-        return pc_board_t(ifs);
+        return pc_board_t(filename);
     case textmode_type_t::tundra_draw:
-        return tundra_draw_t(ifs);
+        return tundra_draw_t(filename);
     case textmode_type_t::xbin:
-        return xbin_t(ifs);
+        return xbin_t(filename);
     case textmode_type_t::ansi:
-        return ansi_t(ifs);
+        return ansi_t(filename);
     case textmode_type_t::ascii:
-        return ascii_t(ifs);
+        return ascii_t(filename);
     case textmode_type_t::undefined:
     default:
         throw file_format_not_recognized_t();

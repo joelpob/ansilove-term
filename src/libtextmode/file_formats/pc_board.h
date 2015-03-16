@@ -6,7 +6,7 @@
 class pc_board_t : public textmode_t
 {
 public:
-    pc_board_t(std::ifstream&);
+    pc_board_t(const std::string&);
 };
 
 #endif

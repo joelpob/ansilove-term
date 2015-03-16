@@ -9,6 +9,7 @@ $(OUT): ans.o\
 		artworx.o\
 		ascii.o\
 		binary_text.o\
+		file.o\
 		ice_draw.o\
 		image_data.o\
 		options.o\

@@ -109,16 +109,7 @@ inline bool is_escape_code_terminator(const uint8_t& ascii_code)
     return ascii_code >= '@' && ascii_code <= '~';
 }
 
-inline void read(std::ifstream& ifs, uint8_t& data)
-{
-    ifs.read(reinterpret_cast<char*>(&data), 1);
-    if(ifs.fail()) {
-        ifs.clear();
-        throw std::exception();
-    }
-}
-
-ansi_tokens_t tokenize_ansi_file(std::ifstream& ifs, const size_t& file_size)
+ansi_tokens_t tokenize_ansi_file(file_t& file, const size_t& file_size)
 {
     ansi_tokens_t ansi_tokens;
     uint8_t byte;
@@ -126,7 +117,7 @@ ansi_tokens_t tokenize_ansi_file(std::ifstream& ifs, const size_t& file_size)
     bool pre_escape_mode = false;
     bool escape_mode = false;
     for(size_t i = 0; i < file_size; ++i) {
-        read(ifs, byte);
+        byte = file.read_byte();
         if(escape_mode) {
             if(is_numeric(byte)) {
                 ansi_escape_sequence.append_numeric(byte);
@@ -224,10 +215,10 @@ bool has_24_bit_colors(image_data_t& image_data)
     return false;
 }
 
-image_data_t read_ansi_file(std::ifstream& ifs, const size_t& file_size, const size_t& columns, palette_type_t& palette_type)
+image_data_t read_ansi_file(file_t& file, const size_t& file_size, const size_t& columns, palette_type_t& palette_type)
 {
     ansi_screen_t screen(columns == 0 ? 80 : columns);
-    auto ansi_tokens = tokenize_ansi_file(ifs, file_size);
+    auto ansi_tokens = tokenize_ansi_file(file, file_size);
     size_t lit_pos = 0;
     size_t esc_pos = 0;
     for(const auto& type:ansi_tokens.types) {
@@ -363,9 +354,10 @@ image_data_t read_ansi_file(std::ifstream& ifs, const size_t& file_size, const s
     }
 }
 
-ansi_t::ansi_t(std::ifstream& ifs)
-    : textmode_t(ifs)
+ansi_t::ansi_t(const std::string& filename)
+    : textmode_t(filename)
 {
-    image_data = read_ansi_file(ifs, sauce.file_size, size_t(sauce.columns), options.palette_type);
+    file_t file(filename);
+    image_data = read_ansi_file(file, sauce.file_size, size_t(sauce.columns), options.palette_type);
     type = textmode_type_t::ansi;
 }
