@@ -294,7 +294,7 @@ inline void display_24Bit_sequence(std::ostream& ostream, const std::string& pre
     ostream << "\e[" << prefix << ";2;" << int(rgb_value.red) << ";" << int(rgb_value.green) << ";" << int(rgb_value.blue) << "m";
 }
 
-void display_as_xterm24Bit(std::ostream& ostream, textmode_t& textmode)
+void display_as_xterm24bit(std::ostream& ostream, textmode_t& textmode)
 {
     rgb_t white = {170, 170, 170};
     rgb_t black = {0, 0, 0};
