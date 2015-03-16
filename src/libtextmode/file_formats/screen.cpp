@@ -12,6 +12,9 @@ void serial_screen_t::putc(const uint8_t& code)
 
 void serial_screen_t::new_line()
 {
+    if(start_of_line) {
+        data.push_back(std::vector<block_t>());
+    }
     start_of_line = true;
 }
 
