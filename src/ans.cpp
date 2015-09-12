@@ -2,12 +2,14 @@
 #include <iostream>
 #include "textmode.h"
 #include "term/text.h"
+#include "image/image.h"
 
 enum output_type_t {
     text,
     ansi,
     xterm256,
-    xterm24bit
+    xterm24bit,
+    png
 };
 
 struct ans_options_t
@@ -44,6 +46,8 @@ arguments_t get_command_line_arguments(const int& argc, const char* argv[])
                     arguments.options.output_type = output_type_t::xterm256;
                 } else if(argument == "--xterm24bit") {
                     arguments.options.output_type = output_type_t::xterm24bit;
+                } else if(argument == "--png") {
+                    arguments.options.output_type = output_type_t::png;
                 } else {
                     throw std::move(argument);
                 }
@@ -72,6 +76,7 @@ int main(int argc, char const *argv[])
         std::cout << "    --ansi            Display with ANSi escape sequences" << std::endl;
         std::cout << "    --xterm256        Display with XTerm's 256-color palette" << std::endl;
         std::cout << "    --xterm24bit      Display with 24-Bit escape sequences" << std::endl;
+        std::cout << "    --png             Generate a PNG image" << std::endl;
         return 0;
     }
     if(arguments.options.version) {
@@ -93,6 +98,12 @@ int main(int argc, char const *argv[])
                 break;
             case output_type_t::xterm24bit:
                 display_as_xterm24bit(std::cout, artwork);
+                break;
+            case output_type_t::png:
+                {
+                    image_t image(artwork);
+                    image.save_as_png(filename + ".png");
+                }
                 break;
             }
         } catch(file_format_not_recognized_t e) {

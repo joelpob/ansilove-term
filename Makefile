@@ -11,7 +11,9 @@ $(OUT): ans.o\
 		binary_text.o\
 		file.o\
 		ice_draw.o\
+		image.o\
 		image_data.o\
+		lodepng.o\
 		options.o\
 		palettes.o\
 		pc_board.o\
@@ -30,7 +32,13 @@ $(OUT): ans.o\
 %.o: src/libtextmode/file_formats/%.cpp src/libtextmode/file_formats/%.h
 	$(CXX) $(CXXFLAGS) $< -o $@
 
+%.o: src/libtextmode/image/%.cpp src/libtextmode/image/%.h
+	$(CXX) $(CXXFLAGS) $< -o $@
+
 %.o: src/libtextmode/term/%.cpp src/libtextmode/term/%.h
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+%.o: src/lodepng/%.cpp src/lodepng/%.h
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 ans.o: src/ans.cpp

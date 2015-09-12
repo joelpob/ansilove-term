@@ -181,11 +181,11 @@ image_data_t read_ansiedit_file(file_t& file, const size_t& file_size, options_t
         }
     }
 
-    if(!ega_palette.empty()) {
+    if(ega_palette.length == 0) {
+        options.palette_type = palette_type_t::binary_text;
+    } else {
         image_data.palette = std::move(ega_palette);
         options.palette_type = palette_type_t::custom;
-    } else {
-        options.palette_type = palette_type_t::binary_text;
     }
 
     return std::move(image_data);

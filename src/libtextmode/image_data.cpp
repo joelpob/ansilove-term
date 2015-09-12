@@ -72,12 +72,24 @@ bool rgb_t::operator!=(const rgb_t& other)
     return (red != other.red) || (green != other.green) || (blue != other.blue);
 }
 
+palette_t::palette_t()
+{
+}
+
+palette_t::palette_t(std::vector<rgb_t> ega_palette)
+{
+    for(auto& ega_value:ega_palette) {
+        push(ega_value);
+    }
+}
+
 void palette_t::push(rgb_t& ega_value)
 {
     ega.push_back(ega_value);
     rgb_t rgb_value = ega_value.from_ega_to_rgb();
     lab.push_back(rgb_value.from_rgb_to_lab());
     rgb.push_back(std::move(rgb_value));
+    length += 1;
 }
 
 rgb_t& palette_t::operator[](const size_t& index)
@@ -85,7 +97,39 @@ rgb_t& palette_t::operator[](const size_t& index)
     return rgb[index];
 }
 
-bool palette_t::empty()
+void font_t::generate_bits()
 {
-    return ega.empty();
+    for(auto i = bytes.begin(); i < bytes.end(); i += 1) {
+        std::vector<bool> bits;
+        for(auto j = i->begin(); j < i->end(); j += 1) {
+            for(int k = 7; k >= 0; k -= 1) {
+                bits.push_back(((*j >> k) & 1) == 1);
+            }
+        }
+        this->bits.push_back(bits);
+    }
+}
+
+font_t::font_t()
+{
+}
+
+font_t::font_t(font_definition_t font_definition)
+{
+    this->type = font_definition.type;
+    length = font_definition.bytes.size();
+    this->height = font_definition.height;
+    this->bytes = font_definition.bytes;
+    generate_bits();
+}
+
+font_t::font_t(std::vector<uint8_t> bytes, size_t height, size_t length, font_type_t type)
+{
+    this->type = type;
+    this->length = length;
+    this->height = height;
+    for(auto i = bytes.begin(); i < bytes.end(); i += height) {
+        this->bytes.push_back(std::vector<uint8_t>(i, i + height));
+    }
+    generate_bits();
 }

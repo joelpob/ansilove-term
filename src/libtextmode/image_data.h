@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstddef>
 #include <cstdint>
+#include "options.h"
 
 struct lab_t
 {
@@ -24,9 +25,11 @@ struct palette_t
     std::vector<rgb_t> ega;
     std::vector<rgb_t> rgb;
     std::vector<lab_t> lab;
+    size_t length = 0;
 
+    palette_t();
+    palette_t(std::vector<rgb_t> ega_palette);
     void push(rgb_t&);
-    bool empty();
     rgb_t& operator[](const size_t&);
 };
 
@@ -48,6 +51,30 @@ struct block_t
     attribute_t attr;
 };
 
+struct font_definition_t
+{
+    font_type_t type;
+    size_t height;
+    std::vector<std::vector<uint8_t>> bytes;
+};
+
+class font_t
+{
+private:
+    void generate_bits();
+public:
+    font_type_t type;
+    size_t length = 0;
+    size_t width = 8;
+    size_t height = 0;
+    std::vector<std::vector<uint8_t>> bytes;
+    std::vector<std::vector<bool>> bits;
+
+    font_t();
+    font_t(font_definition_t);
+    font_t(std::vector<uint8_t> bytes, size_t height, size_t length, font_type_t type = font_type_t::custom);
+};
+
 class image_data_t
 {
 public:
@@ -56,6 +83,7 @@ public:
 
     size_t columns = 0;
     size_t rows = 0;
+    font_t font;
 
     void putc(const uint8_t&);
 

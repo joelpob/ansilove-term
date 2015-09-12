@@ -62,10 +62,10 @@ void write_uncompressed_data_to_screen(screen_t& screen, file_t& file, const siz
 image_data_t read_xbin_file(file_t& file, const size_t& file_size, options_t& options)
 {
     uint16_t columns, rows;
-    uint8_t font_size;
+    uint8_t font_height;
     bool palette_flag, font_flag, compress_flag, non_blink_flag, chars_512_flag;
     palette_t ega_palette;
-    std::vector<uint8_t> font;
+    std::vector<uint8_t> font_bytes;
 
     std::string id = file.read_string(4);
     if(id != "XBIN") {
@@ -79,9 +79,9 @@ image_data_t read_xbin_file(file_t& file, const size_t& file_size, options_t& op
 
     columns = file.read_16_bit_word();
     rows = file.read_16_bit_word();
-    font_size = file.read_byte();
+    font_height = file.read_byte();
 
-    if(font_size == 0 || font_size > 32) {
+    if(font_height == 0 || font_height > 32) {
         throw std::exception();
     }
 
@@ -107,12 +107,12 @@ image_data_t read_xbin_file(file_t& file, const size_t& file_size, options_t& op
 
     if(font_flag) {
 
-        if(font_size == 0) {
+        if(font_height == 0) {
             throw std::exception();
         }
 
-        font.resize(font_size * (chars_512_flag ? 512 : 256));
-        file.read_bytes(font);
+        font_bytes.resize(font_height * (chars_512_flag ? 512 : 256));
+        file.read_bytes(font_bytes);
         options.font_type = font_type_t::custom;
     } else {
         options.font_type = font_type_t::undefined;
@@ -131,6 +131,10 @@ image_data_t read_xbin_file(file_t& file, const size_t& file_size, options_t& op
         image_data.palette = std::move(ega_palette);
     } else {
         image_data.palette = create_binary_text_palette();
+    }
+
+    if(font_flag) {
+        image_data.font = font_t(font_bytes, font_height, chars_512_flag ? 512 : 256);
     }
 
     options.non_blink = non_blink_flag ? non_blink_t::on : non_blink_t::off;
