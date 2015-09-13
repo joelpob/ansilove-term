@@ -72,7 +72,7 @@ public:
 
     font_t();
     font_t(font_definition_t);
-    font_t(std::vector<uint8_t> bytes, size_t height, size_t length, font_type_t type = font_type_t::custom);
+    font_t(std::vector<uint8_t> bytes, size_t height = 16, size_t length = 256, font_type_t type = font_type_t::custom);
 };
 
 class image_data_t

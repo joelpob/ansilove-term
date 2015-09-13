@@ -8,7 +8,7 @@ image_data_t read_artworx_file(file_t& file, const size_t& file_size)
 {
     screen_t screen(80);
     palette_t ega_palette;
-    std::vector<uint8_t> font(4096);
+    std::vector<uint8_t> font_bytes(4096);
 
     uint8_t version = file.read_byte();
     if(version != 1) {
@@ -22,7 +22,7 @@ image_data_t read_artworx_file(file_t& file, const size_t& file_size)
         ega_palette.push(rgb);
     }
 
-    file.read_bytes(font);
+    file.read_bytes(font_bytes);
 
     uint8_t code, attr;
     for(size_t i = file.tell(); i < file_size; i += 2) {
@@ -35,6 +35,7 @@ image_data_t read_artworx_file(file_t& file, const size_t& file_size)
     image_data_t image_data = screen.get_image_data();
 
     image_data.palette = std::move(ega_palette);
+    image_data.font = font_t(font_bytes);
 
     return std::move(image_data);
 }
