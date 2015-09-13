@@ -309,12 +309,16 @@ image_t::image_t(textmode_t& artwork)
     height = artwork.image_data.rows * font.height;
     data.resize(width * height * 3);
     auto block = artwork.image_data.data.begin();
+    rgb_t* fg;
+    rgb_t* bg;
     for(size_t y = 0; y < artwork.image_data.rows; y += 1) {
         for(size_t x = 0; x < artwork.image_data.columns; x += 1, block += 1) {
+            fg = (block->attr.fg_rgb_mode) ? &block->attr.fg_rgb : &palette.rgb[block->attr.fg];
+            bg = (block->attr.bg_rgb_mode) ? &block->attr.bg_rgb : &palette.rgb[block->attr.bg];
             if(artwork.options.letter_space == letter_space_t::nine_pixels) {
-                draw_glyph_with_ninth_bit(x, y, block->code, font, palette.rgb[block->attr.fg], palette.rgb[block->attr.bg]);
+                draw_glyph_with_ninth_bit(x, y, block->code, font, *fg, *bg);
             } else {
-                draw_glyph(x, y, block->code, font, palette.rgb[block->attr.fg], palette.rgb[block->attr.bg]);
+                draw_glyph(x, y, block->code, font, *fg, *bg);
             }
         }
     }
