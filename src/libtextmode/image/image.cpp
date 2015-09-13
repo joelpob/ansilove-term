@@ -262,37 +262,56 @@ font_t get_font(font_type_t font_type)
     }
 }
 
-void image_t::draw_glyph_with_ninth_bit(const size_t& x, const size_t& y, const uint8_t& code, const font_t& font, const rgb_t& fg, const rgb_t& bg)
+void image_t::draw_glyph_with_ninth_bit(const size_t& x, const size_t& y, const uint8_t& code, const font_t& font, const rgb_t& fg, const rgb_t& bg, const bool& shift_fg_color)
 {
-    auto pixel = data.begin() + (y * font.height * width + x * (font.width + 1)) * 3;
+    size_t pixel_offset = (y * font.height * width + x * (font.width + 1)) * 3;
+    auto pixel = rgb_data.begin() + pixel_offset;
+    auto blink_pixel = blink_rgb_data.begin() + pixel_offset;
     auto bit = font.bits[code].begin();
     const rgb_t* col;
-    for(size_t y = 0; y < font.height; y += 1, pixel += width * 3 - (font.width + 1) * 3) {
-        for(size_t x = 0; x < font.width; x += 1, pixel += 3, bit += 1) {
+    size_t y_offset = width * 3 - (font.width + 1) * 3;
+    for(size_t y = 0; y < font.height; y += 1, pixel += y_offset, blink_pixel += y_offset) {
+        for(size_t x = 0; x < font.width; x += 1, pixel += 3, blink_pixel += 3, bit += 1) {
             col = (*bit) ? &fg : &bg;
             *(pixel + 0) = col->red;
             *(pixel + 1) = col->green;
             *(pixel + 2) = col->blue;
+            col = shift_fg_color ? &bg : col;
+            *(blink_pixel + 0) = col->red;
+            *(blink_pixel + 1) = col->green;
+            *(blink_pixel + 2) = col->blue;
         }
         col = (code >= 192 && code <= 223) ? col : &bg;
         *(pixel + 0) = col->red;
         *(pixel + 1) = col->green;
         *(pixel + 2) = col->blue;
         pixel += 3;
+        col = shift_fg_color ? &bg : col;
+        *(blink_pixel + 0) = col->red;
+        *(blink_pixel + 1) = col->green;
+        *(blink_pixel + 2) = col->blue;
+        blink_pixel += 3;
     }
 }
 
-void image_t::draw_glyph(const size_t& x, const size_t& y, const uint8_t& code, const font_t& font, const rgb_t& fg, const rgb_t& bg)
+void image_t::draw_glyph(const size_t& x, const size_t& y, const uint8_t& code, const font_t& font, const rgb_t& fg, const rgb_t& bg, const bool& shift_fg_color)
 {
-    auto pixel = data.begin() + (y * font.height * width + x * font.width) * 3;
+    size_t pixel_offset = (y * font.height * width + x * font.width) * 3;
+    auto pixel = rgb_data.begin() + pixel_offset;
+    auto blink_pixel = blink_rgb_data.begin() + pixel_offset;
     auto bit = font.bits[code].begin();
     const rgb_t* col;
-    for(size_t y = 0; y < font.height; y += 1, pixel += width * 3 - font.width * 3) {
-        for(size_t x = 0; x < font.width; x += 1, pixel += 3, bit += 1) {
+    size_t y_offset = width * 3 - font.width * 3;
+    for(size_t y = 0; y < font.height; y += 1, pixel += y_offset, blink_pixel += y_offset) {
+        for(size_t x = 0; x < font.width; x += 1, pixel += 3, blink_pixel += 3, bit += 1) {
             col = (*bit) ? &fg : &bg;
             *(pixel + 0) = col->red;
             *(pixel + 1) = col->green;
             *(pixel + 2) = col->blue;
+            col = shift_fg_color ? &bg : col;
+            *(blink_pixel + 0) = col->red;
+            *(blink_pixel + 1) = col->green;
+            *(blink_pixel + 2) = col->blue;
         }
     }
 }
@@ -307,26 +326,45 @@ image_t::image_t(textmode_t& artwork)
         width = artwork.image_data.columns * font.width;
     }
     height = artwork.image_data.rows * font.height;
-    data.resize(width * height * 3);
+    rgb_data.resize(width * height * 3);
+    blink_rgb_data.resize(width * height * 3);
     auto block = artwork.image_data.data.begin();
     rgb_t* fg;
     rgb_t* bg;
+    bool non_blink = (artwork.options.non_blink == non_blink_t::on);
+    bool shift_fg_color;
     for(size_t y = 0; y < artwork.image_data.rows; y += 1) {
         for(size_t x = 0; x < artwork.image_data.columns; x += 1, block += 1) {
             fg = (block->attr.fg_rgb_mode) ? &block->attr.fg_rgb : &palette.rgb[block->attr.fg];
             bg = (block->attr.bg_rgb_mode) ? &block->attr.bg_rgb : &palette.rgb[block->attr.bg];
-            if(artwork.options.letter_space == letter_space_t::nine_pixels) {
-                draw_glyph_with_ninth_bit(x, y, block->code, font, *fg, *bg);
+            if(!non_blink && !block->attr.fg_rgb_mode && !block->attr.bg_rgb_mode && block->attr.bg >= 8) {
+                bg = &palette.rgb[block->attr.bg - 8];
+                shift_fg_color = true;
             } else {
-                draw_glyph(x, y, block->code, font, *fg, *bg);
+                shift_fg_color = false;
+            }
+            if(artwork.options.letter_space == letter_space_t::nine_pixels) {
+                draw_glyph_with_ninth_bit(x, y, block->code, font, *fg, *bg, shift_fg_color);
+            } else {
+                draw_glyph(x, y, block->code, font, *fg, *bg, shift_fg_color);
             }
         }
     }
 }
 
+void save_png(std::vector<uint8_t>& rgb_data, const uint32_t& width, const uint32_t& height, const std::string& out)
+{
+    std::unique_ptr<uint8_t[]> uint8_array(new uint8_t[rgb_data.size()]);
+    std::copy(rgb_data.begin(), rgb_data.end(), uint8_array.get());
+    lodepng::encode(out, uint8_array.get(), width, height, LCT_RGB, 8);
+}
+
 void image_t::save_as_png(const std::string& out)
 {
-    std::unique_ptr<uint8_t[]> raw_rgb_data(new uint8_t[data.size()]);
-    std::copy(data.begin(), data.end(), raw_rgb_data.get());
-    lodepng::encode(out, raw_rgb_data.get(), width, height, LCT_RGB, 8);
+    save_png(rgb_data, width, height, out);
+}
+
+void image_t::save_blink_image_as_png(const std::string& out)
+{
+    save_png(blink_rgb_data, width, height, out);
 }
