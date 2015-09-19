@@ -262,6 +262,20 @@ font_t get_font(font_type_t font_type)
     }
 }
 
+palette_t get_palette(palette_type_t palette_type)
+{
+    switch(palette_type) {
+        case palette_type_t::binary_text:
+            return palette_t(binary_text_palette);
+        case palette_type_t::ansi:
+        case palette_type_t::ansi_with_truecolor:
+        case palette_type_t::custom:
+        case palette_type_t::truecolor:
+        case palette_type_t::none:
+            return palette_t(ansi_palette);
+    }
+}
+
 void image_t::draw_glyph_with_ninth_bit(const size_t& x, const size_t& y, const uint8_t& code, const font_t& font, const rgb_t& fg, const rgb_t& bg, const bool& shift_fg_color)
 {
     size_t pixel_offset = (y * font.height * width + x * (font.width + 1)) * 3;
@@ -319,7 +333,7 @@ void image_t::draw_glyph(const size_t& x, const size_t& y, const uint8_t& code, 
 image_t::image_t(textmode_t& artwork)
 {
     font_t font = (artwork.image_data.font.length == 0) ? get_font(artwork.options.font_type) : artwork.image_data.font;
-    palette_t palette = (artwork.image_data.palette.length == 0) ? palette_t(ansi_palette) : artwork.image_data.palette;
+    palette_t palette = (artwork.image_data.palette.length == 0) ? get_palette(artwork.options.palette_type) : artwork.image_data.palette;
     if(artwork.options.letter_space == letter_space_t::nine_pixels) {
         width = artwork.image_data.columns * (font.width + 1);
     } else {

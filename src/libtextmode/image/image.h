@@ -3,6 +3,10 @@
 
 #include "textmode.h"
 
+font_t get_font(font_type_t font_type);
+
+palette_t get_palette(palette_type_t palette_type);
+
 class image_t
 {
 private:

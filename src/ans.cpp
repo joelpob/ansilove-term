@@ -3,13 +3,15 @@
 #include "textmode.h"
 #include "term/text.h"
 #include "image/image.h"
+#include "scroller/scroller.h"
 
 enum output_type_t {
     text,
     ansi,
     xterm256,
     xterm24bit,
-    png
+    png,
+    scroller
 };
 
 struct ans_options_t
@@ -48,6 +50,8 @@ arguments_t get_command_line_arguments(const int& argc, const char* argv[])
                     arguments.options.output_type = output_type_t::xterm24bit;
                 } else if(argument == "--png") {
                     arguments.options.output_type = output_type_t::png;
+                } else if(argument == "--scroller") {
+                    arguments.options.output_type = output_type_t::scroller;
                 } else {
                     throw std::move(argument);
                 }
@@ -77,11 +81,17 @@ int main(int argc, char const *argv[])
         std::cout << "    --xterm256        Display with XTerm's 256-color palette" << std::endl;
         std::cout << "    --xterm24bit      Display with 24-Bit escape sequences" << std::endl;
         std::cout << "    --png             Generate a PNG image" << std::endl;
+        std::cout << "    --scroller        Display artwork as a scrolling display" << std::endl;
         return 0;
     }
     if(arguments.options.version) {
         std::cout << "ans version 0.1" << std::endl;
         return 0;
+    }
+    if(arguments.options.output_type == output_type_t::scroller) {
+        if(!sdl_init()) {
+            return -1;
+        }
     }
     for(auto filename:arguments.files) {
         try {
@@ -105,12 +115,21 @@ int main(int argc, char const *argv[])
                     image.save_as_png(filename + ".png");
                 }
                 break;
+            case output_type_t::scroller:
+                if(display_as_scroller(artwork)) {
+                    quit_sdl();
+                    return 0;
+                }
+                break;
             }
         } catch(file_format_not_recognized_t e) {
             std::cerr << "File format not recognized: " << filename << std::endl;
         } catch(std::exception e) {
             std::cerr << "An error occurred whilst attempting to read " << filename << std::endl;
         }
+    }
+    if(arguments.options.output_type == output_type_t::scroller) {
+        quit_sdl();
     }
     return 0;
 }
