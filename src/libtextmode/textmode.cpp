@@ -13,6 +13,7 @@
 textmode_t::textmode_t(const std::string& filename)
     : sauce(filename)
 {
+    this->filename = filename;
     options = sauce.get_options();
 
     if(!sauce.title.empty()) {

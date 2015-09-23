@@ -23,6 +23,7 @@ $(OUT): ans.o\
 		scroller.o\
 		text.o\
 		textmode.o\
+		timer.o\
 		tundra_draw.o\
 		utf8.o\
 		xbin.o

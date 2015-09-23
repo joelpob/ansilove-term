@@ -1,165 +1,258 @@
-#include <iostream>
 #include "scroller.h"
 #include "../image/image.h"
+#include "timer.h"
 #include <SDL2/SDL.h>
+#include <string>
 #include <vector>
 
-SDL_Window* window;
-SDL_Renderer* renderer;
 SDL_Texture* buffer;
-SDL_Texture* buffer_blink;
-SDL_DisplayMode display;
+SDL_Texture* blink_buffer;
+size_t scroller_y = 0;
+size_t image_y = 0;
+uint8_t old_font_height = 0;
+#ifdef _WIN32
+char file_seperator = '\\';
+#else
+char file_seperator =  '/';
+#endif
 
-bool sdl_init()
+void clear_buffers(SDL_Renderer* renderer)
 {
-    SDL_Init(SDL_INIT_VIDEO);
-    SDL_GetCurrentDisplayMode(0, &display);
-    window = SDL_CreateWindow("ANSiLove-term", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, display.w, display.h, SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_FULLSCREEN);
-    if(window == NULL) {
-        std::cerr << "SDL2: Could not create window." << std::endl;
-        return false;
-    }
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
-    if(renderer == NULL) {
-        std::cerr << "SDL2: Could not create renderer." << std::endl;
-        return false;
-    }
-    buffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, display.w, display.h);
-    buffer_blink = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, display.w, display.h);
-    return true;
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_SetRenderTarget(renderer, buffer);
+    SDL_RenderClear(renderer);
+    SDL_SetRenderTarget(renderer, blink_buffer);
+    SDL_RenderClear(renderer);
+    SDL_SetRenderTarget(renderer, NULL);
+    SDL_RenderClear(renderer);
 }
 
-void quit_sdl()
+void scroller_init(SDL_Renderer* renderer, const size_t& width, const size_t& height)
+{
+    buffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_TARGET, width, height);
+    blink_buffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_TARGET, width, height);
+    clear_buffers(renderer);
+}
+
+void scroller_quit()
 {
     SDL_DestroyTexture(buffer);
-    SDL_DestroyTexture(buffer_blink);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    SDL_DestroyTexture(blink_buffer);
 }
 
-void draw_glyph(const size_t& x, const size_t& y, const uint8_t& code, const font_t& font, const rgb_t& fg, const rgb_t& bg, const bool& shift_fg_color)
+void render_glyph(uint8_t* pixels, const int& pitch, const size_t& x, const size_t& y, const uint8_t& code, const font_t& font, const rgb_t& fg)
 {
-    uint8_t* pixels = NULL;
-    uint8_t* blink_pixels = NULL;
-    int pitch;
-    SDL_LockTexture(buffer, NULL, (void**)&pixels, &pitch);
-    SDL_LockTexture(buffer_blink, NULL, (void**)&blink_pixels, &pitch);
     size_t pixel_offset = y * font.height * pitch + x * font.width * 4;
     uint8_t* pixel = pixels + pixel_offset;
-    uint8_t* pixel_blink = blink_pixels + pixel_offset;
     auto bit = font.bits[code].begin();
-    const rgb_t* col;
     size_t y_offset = pitch - font.width * 4;
-    for(size_t y = 0; y < font.height; y += 1, pixel += y_offset, pixel_blink += y_offset) {
-        for(size_t x = 0; x < font.width; x += 1, pixel += 4, pixel_blink += 4, bit += 1) {
-            col = (*bit) ? &fg : &bg;
-            *(pixel + 0) = col->blue;
-            *(pixel + 1) = col->green;
-            *(pixel + 2) = col->red;
-            col = shift_fg_color ? &bg : col;
-            *(pixel_blink + 0) = col->blue;
-            *(pixel_blink + 1) = col->green;
-            *(pixel_blink + 2) = col->red;
-        }
-    }
-    SDL_UnlockTexture(buffer);
-    SDL_UnlockTexture(buffer_blink);
-}
-
-void clear_screen()
-{
-    uint8_t* pixels = NULL;
-    uint8_t* blink_pixels = NULL;
-    int pitch;
-    SDL_LockTexture(buffer, NULL, (void**)&pixels, &pitch);
-    SDL_LockTexture(buffer_blink, NULL, (void**)&blink_pixels, &pitch);
-    uint8_t* pixel = pixels;
-    uint8_t* pixel_blink = blink_pixels;
-    size_t end_of_screen = display.h * pitch;
-    std::memset(pixel, 0, end_of_screen);
-    std::memset(pixel_blink, 0, end_of_screen);
-    SDL_UnlockTexture(buffer);
-    SDL_UnlockTexture(buffer_blink);
-}
-
-void shift_display_up(const size_t& font_height)
-{
-    uint8_t* pixels = NULL;
-    uint8_t* blink_pixels = NULL;
-    int pitch;
-    SDL_LockTexture(buffer, NULL, (void**)&pixels, &pitch);
-    SDL_LockTexture(buffer_blink, NULL, (void**)&blink_pixels, &pitch);
-    uint8_t* pixel = pixels;
-    uint8_t* pixel_blink = blink_pixels;
-    size_t row_of_text = font_height * pitch;
-    size_t start_of_last_row = display.h * pitch - row_of_text;
-    std::memcpy(pixel, pixel + row_of_text, start_of_last_row);
-    std::memset(pixel + start_of_last_row, 0, row_of_text);
-    std::memcpy(pixel_blink, pixel_blink + row_of_text, start_of_last_row);
-    std::memset(pixel_blink + start_of_last_row, 0, row_of_text);
-    SDL_UnlockTexture(buffer);
-    SDL_UnlockTexture(buffer_blink);
-}
-
-bool display_as_scroller(textmode_t& artwork)
-{
-    SDL_Event event;
-    font_t font = (artwork.image_data.font.length == 0) ? get_font(artwork.options.font_type) : artwork.image_data.font;
-    palette_t palette = (artwork.image_data.palette.length == 0) ? get_palette(artwork.options.palette_type) : artwork.image_data.palette;
-    int x = 0;
-    int y = 0;
-    int screen_start_x = (display.w / font.width - artwork.image_data.columns) / 2;
-    rgb_t* fg;
-    rgb_t* bg;
-    auto block = artwork.image_data.data.begin();
-    bool non_blink = (artwork.options.non_blink == non_blink_t::on);
-    bool shift_fg_color;
-    bool blink_state = false;
-    size_t blink_counter = 0;
-    clear_screen();
-    while(block != artwork.image_data.data.end()) {
-        SDL_PollEvent(&event);
-        if(event.type == SDL_QUIT) {
-            return true;
-        }
-        fg = (block->attr.fg_rgb_mode) ? &block->attr.fg_rgb : &palette.rgb[block->attr.fg];
-        bg = (block->attr.bg_rgb_mode) ? &block->attr.bg_rgb : &palette.rgb[block->attr.bg];
-        if(!non_blink && !block->attr.fg_rgb_mode && !block->attr.bg_rgb_mode && block->attr.bg >= 8) {
-            bg = &palette.rgb[block->attr.bg - 8];
-            shift_fg_color = true;
-        } else {
-            shift_fg_color = false;
-        }
-        if(screen_start_x + x >= 0 && screen_start_x + x < display.w / font.width) {
-            draw_glyph(screen_start_x + x, y, block->code, font, *fg, *bg, shift_fg_color);
-        }
-        block += 1;
-        if(block == artwork.image_data.data.end()) {
-            break;
-        }
-        x += 1;
-        if(x == artwork.image_data.columns) {
-            x = 0;
-            y += 1;
-            if(y == display.h / font.height) {
-                shift_display_up(font.height);
-                y -= 1;
+    for(size_t y = 0; y < font.height; y += 1, pixel += y_offset) {
+        for(size_t x = 0; x < font.width; x += 1, pixel += 4, bit += 1) {
+            if(*bit) {
+                *(pixel + 0) = fg.red;
+                *(pixel + 1) = fg.green;
+                *(pixel + 2) = fg.blue;
+                *(pixel + 3) = 255;
+            } else {
+                *(pixel + 3) = 0;
             }
         }
-        if(blink_counter == 250) {
-            blink_state = !blink_state;
-            blink_counter = 0;
-        } else {
-            blink_counter += 1;
-        }
-        if(blink_state) {
-            SDL_RenderCopy(renderer, buffer_blink, NULL, NULL);
-        } else {
-            SDL_RenderCopy(renderer, buffer, NULL, NULL);
-        }
-        SDL_RenderPresent(renderer);
     }
-    SDL_Delay(1000);
+}
+
+SDL_Texture* render_glyphs(SDL_Renderer* renderer, font_t& font, palette_t& palette)
+{
+    SDL_Texture* glyphs = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, font.width * font.length, font.height * palette.length);
+    SDL_SetTextureBlendMode(glyphs, SDL_BLENDMODE_BLEND);
+    uint8_t* pixels = NULL;
+    int pitch;
+    SDL_LockTexture(glyphs, NULL, (void**)&pixels, &pitch);
+    for(size_t y = 0; y < 16; y += 1) {
+        for(size_t x = 0; x < 256; x += 1) {
+            render_glyph(pixels, pitch, x, y, x, font, palette.rgb[y]);
+        }
+    }
+    SDL_UnlockTexture(glyphs);
+    return glyphs;
+}
+
+void draw_glyph(SDL_Renderer* renderer, SDL_Texture* glyphs, SDL_Texture* buffer, SDL_Texture* blink_buffer, const size_t& x, const size_t& y, const font_t& font, const palette_t& palette, const block_t& block, const bool& non_blink = true)
+{
+    SDL_Rect src = {int(block.code * font.width), int(block.attr.fg * font.height), int(font.width), int(font.height)};
+    SDL_Rect dst = {int(x * font.width), int(y * font.height), int(font.width), int(font.height)};
+    uint8_t bg = block.attr.bg;
+    if(!non_blink && bg >= 8) {
+        bg -= 8;
+    }
+    SDL_SetRenderTarget(renderer, buffer);
+    SDL_SetRenderDrawColor(renderer, palette.rgb[bg].red, palette.rgb[bg].green, palette.rgb[bg].blue, 255);
+    SDL_RenderFillRect(renderer, &dst);
+    SDL_RenderCopy(renderer, glyphs, &src, &dst);
+    if(blink_buffer != NULL) {
+        SDL_SetRenderTarget(renderer, blink_buffer);
+        if(!non_blink && block.attr.bg >= 8) {
+            SDL_RenderFillRect(renderer, &dst);
+        } else {
+            SDL_RenderCopy(renderer, buffer, &dst, &dst);
+        }
+    }
+}
+
+void draw_glyph_with_ninth_bit(SDL_Renderer* renderer, SDL_Texture* glyphs, SDL_Texture* buffer, SDL_Texture* blink_buffer, const size_t& x, const size_t& y, const font_t& font, const palette_t& palette, const block_t& block, const bool& non_blink = true)
+{
+    SDL_Rect src = {int(block.code * (font.width)), int(block.attr.fg * font.height), int(font.width), int(font.height)};
+    SDL_Rect dst = {int(x * (font.width + 1)), int(y * font.height), int(font.width), int(font.height)};
+    uint8_t bg = block.attr.bg;
+    if(!non_blink && bg >= 8) {
+        bg -= 8;
+    }
+    SDL_SetRenderTarget(renderer, buffer);
+    SDL_SetRenderDrawColor(renderer, palette.rgb[bg].red, palette.rgb[bg].green, palette.rgb[bg].blue, 255);
+    SDL_RenderFillRect(renderer, &dst);
+    SDL_RenderCopy(renderer, glyphs, &src, &dst);
+    if(block.code >= 192 && block.code <= 223) {
+        src.x += 7;
+        src.w = 1;
+        dst.x += 8;
+        dst.w = 1;
+        SDL_RenderCopy(renderer, glyphs, &src, &dst);
+    }
+    if(blink_buffer != NULL) {
+        SDL_SetRenderTarget(renderer, blink_buffer);
+        dst.x -= 8;
+        dst.w = font.width + 1;
+        if(!non_blink && block.attr.bg >= 8) {
+            SDL_RenderFillRect(renderer, &dst);
+        } else {
+            SDL_RenderCopy(renderer, buffer, &dst, &dst);
+        }
+    }
+}
+
+class popup_t
+{
+private:
+    SDL_Texture* popup;
+    SDL_Rect src_rect = {0, 0, 0, 0};
+    SDL_Rect dst_rect = {0, 16, 0, 0};
+public:
+    popup_t(SDL_Renderer* renderer, textmode_t& artwork)
+    {
+        std::string popup_text = artwork.sauce.title.empty() ? artwork.filename.substr(artwork.filename.find_last_of(file_seperator) + 1) : artwork.sauce.title;
+        if(!artwork.sauce.author.empty()) {
+            popup_text += " by " + artwork.sauce.author;
+        }
+        popup_text = " " + popup_text + " ";
+        font_t font = get_font(font_type_t::ibm_vga);
+        palette_t palette = get_palette(palette_type_t::ansi);
+        SDL_Texture* glyphs = render_glyphs(renderer, font, palette);
+        popup = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_TARGET, popup_text.size() * font.width, font.height);
+        src_rect.w = font.width * popup_text.size();
+        src_rect.h = font.height;
+        dst_rect.w = src_rect.w;
+        dst_rect.h = src_rect.h;
+        block_t block;
+        block.attr.fg = 15;
+        size_t x = 0;
+        for(auto& i:popup_text) {
+            block.code = (uint8_t) i;
+            draw_glyph(renderer, glyphs, popup, NULL, x, 0, font, palette, block);
+            x += 1;
+        }
+        SDL_DestroyTexture(glyphs);
+    }
+    void draw(SDL_Renderer* renderer, const size_t& width, const size_t& height)
+    {
+        dst_rect.x = width - src_rect.w - 16;
+        dst_rect.y = height - src_rect.h - 16;
+        SDL_RenderCopy(renderer, popup, &src_rect, &dst_rect);
+    }
+    ~popup_t()
+    {
+        SDL_DestroyTexture(popup);
+    }
+};
+
+bool display_as_scroller(SDL_Window* window, const size_t& width, const size_t& height, SDL_Renderer* renderer, textmode_t& artwork)
+{
+    font_t font = (artwork.image_data.font.length == 0) ? get_font(artwork.options.font_type) : artwork.image_data.font;
+    palette_t palette = (artwork.image_data.palette.length == 0) ? get_palette(artwork.options.palette_type) : artwork.image_data.palette;
+    SDL_Texture* glyphs = render_glyphs(renderer, font, palette);
+    SDL_Texture* current_buffer = buffer;
+    popup_t popup(renderer, artwork);
+    size_t scroller_x = 0;
+    timer_t timer;
+    bool blink_mode = false;
+    SDL_Event event;
+    auto block = artwork.image_data.data.begin();
+    int screen_start_x;
+    bool nine_pixel = (artwork.options.letter_space == letter_space_t::nine_pixels);
+    bool non_blink = (artwork.options.non_blink == non_blink_t::on);
+    if(nine_pixel) {
+        screen_start_x = (width / (font.width + 1) - artwork.image_data.columns) / 2;
+    } else {
+        screen_start_x = (width / font.width - artwork.image_data.columns) / 2;
+    }
+    SDL_Rect line_clear = {0, 0, int(width), int(font.height)};
+    SDL_Rect render_pos = {0, 0, int(width), int(height)};
+    if(font.height != old_font_height) {
+        clear_buffers(renderer);
+        scroller_y = 0;
+        image_y = 0;
+    }
+    old_font_height = font.height;
+    while(block != artwork.image_data.data.end()) {
+        if(SDL_PollEvent(&event) == 1) {
+            if(event.type == SDL_QUIT) {
+                return true;
+            }
+        }
+        if(nine_pixel) {
+            if(screen_start_x + int(scroller_x) >= 0 && screen_start_x + int(scroller_x) < width / (font.width + 1)) {
+                draw_glyph_with_ninth_bit(renderer, glyphs, buffer, blink_buffer, screen_start_x + scroller_x, scroller_y, font, palette, *block, non_blink);
+            }
+        } else {
+            if(screen_start_x + int(scroller_x) >= 0 && screen_start_x + int(scroller_x) < width / font.width) {
+                draw_glyph(renderer, glyphs, buffer, blink_buffer, screen_start_x + scroller_x, scroller_y, font, palette, *block, non_blink);
+            }
+        }
+        block += 1;
+        scroller_x += 1;
+        if(scroller_x == artwork.image_data.columns) {
+            scroller_x = 0;
+            scroller_y += 1;
+            image_y += 1;
+            if(scroller_y == height / font.height) {
+                scroller_y = 0;
+            }
+            if(image_y > scroller_y) {
+                line_clear.y = scroller_y * font.height;
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                SDL_SetRenderTarget(renderer, buffer);
+                SDL_RenderFillRect(renderer, &line_clear);
+                SDL_SetRenderTarget(renderer, blink_buffer);
+                SDL_RenderFillRect(renderer, &line_clear);
+            }
+        }
+        SDL_SetRenderTarget(renderer, NULL);
+        if(image_y > scroller_y) {
+            render_pos.y = height - (scroller_y + 1) * font.height;
+            SDL_RenderCopy(renderer, current_buffer, NULL, &render_pos);
+            render_pos.y -= height;
+            SDL_RenderCopy(renderer, current_buffer, NULL, &render_pos);
+        } else {
+            SDL_RenderCopy(renderer, current_buffer, NULL, NULL);
+        }
+        if(scroller_x % (artwork.image_data.columns / 8) == 0) {
+            popup.draw(renderer, width, height);
+            SDL_RenderPresent(renderer);
+        }
+        if(timer.check() > 250.0) {
+            timer.reset();
+            blink_mode = !blink_mode;
+            current_buffer = blink_mode ? blink_buffer : buffer;
+        }
+    }
+    SDL_DestroyTexture(glyphs);
     return false;
 }

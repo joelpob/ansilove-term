@@ -1,9 +1,15 @@
 #include <fstream>
 #include <iostream>
+#include <SDL2/SDL.h>
 #include "textmode.h"
 #include "term/text.h"
 #include "image/image.h"
 #include "scroller/scroller.h"
+
+SDL_Window* window = NULL;
+SDL_Renderer* renderer = NULL;
+size_t width;
+size_t height;
 
 enum output_type_t {
     text,
@@ -63,6 +69,34 @@ arguments_t get_command_line_arguments(const int& argc, const char* argv[])
     return std::move(arguments);
 }
 
+void sdl_init()
+{
+    SDL_DisplayMode mode;
+    SDL_Init(SDL_INIT_VIDEO);
+    SDL_GetDesktopDisplayMode(0, &mode);
+    window = SDL_CreateWindow("ANSiLove-term", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, mode.w, mode.h, SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_FULLSCREEN);
+    SDL_ShowCursor(SDL_DISABLE);
+    width = size_t(mode.w);
+    height = size_t(mode.h);
+    if(window == NULL) {
+        std::cerr << "SDL2: Could not create window." << std::endl;
+        std::exit(-1);
+    }
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE | SDL_RENDERER_PRESENTVSYNC);
+    if(renderer == NULL) {
+        std::cerr << "SDL2: Could not create renderer." << std::endl;
+        std::exit(-1);
+    }
+}
+
+void sdl_quit()
+{
+    SDL_DestroyRenderer(renderer);
+    SDL_ShowCursor(SDL_ENABLE);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
 int main(int argc, char const *argv[])
 {
     arguments_t arguments;
@@ -88,10 +122,13 @@ int main(int argc, char const *argv[])
         std::cout << "ans version 0.1" << std::endl;
         return 0;
     }
-    if(arguments.options.output_type == output_type_t::scroller) {
-        if(!sdl_init()) {
-            return -1;
-        }
+    switch(arguments.options.output_type) {
+    case output_type_t::scroller:
+        sdl_init();
+        scroller_init(renderer, width, height);
+        break;
+    default:
+        break;
     }
     for(auto filename:arguments.files) {
         try {
@@ -116,8 +153,9 @@ int main(int argc, char const *argv[])
                 }
                 break;
             case output_type_t::scroller:
-                if(display_as_scroller(artwork)) {
-                    quit_sdl();
+                if(display_as_scroller(window, width, height, renderer, artwork)) {
+                    scroller_quit();
+                    sdl_quit();
                     return 0;
                 }
                 break;
@@ -128,8 +166,13 @@ int main(int argc, char const *argv[])
             std::cerr << "An error occurred whilst attempting to read " << filename << std::endl;
         }
     }
-    if(arguments.options.output_type == output_type_t::scroller) {
-        quit_sdl();
+    switch(arguments.options.output_type) {
+    case output_type_t::scroller:
+        scroller_quit();
+        sdl_quit();
+        break;
+    default:
+        break;
     }
     return 0;
 }

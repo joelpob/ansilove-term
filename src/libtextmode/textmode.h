@@ -30,6 +30,7 @@ public:
     options_t options;
     image_data_t image_data;
     textmode_type_t type;
+    std::string filename;
 
     std::string title, author, group;
 };
