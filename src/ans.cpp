@@ -108,7 +108,7 @@ int main(int argc, char const *argv[])
     }
     if(arguments.options.help) {
         std::cout << "usage: ans [--version] [--help] [--text] [--ansi] [--xterm256] [--xterm24bit]" << std::endl;
-        std::cout << "       [file ...]" << std::endl;
+        std::cout << "       [--png] [--scroller] [file ...]" << std::endl;
         std::cout << std::endl;
         std::cout << "    --text            Display as plain-text" << std::endl;
         std::cout << "    --ansi            Display with ANSi escape sequences" << std::endl;

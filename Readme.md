@@ -2,20 +2,22 @@
 
 # Description
 
-Ansilove-Term is a command line tool to display text-mode art files in an XTerm-256colors enabled terminal environment.
+Ansilove-Term is a command line tool to render text-mode art files as PNG files, as well as displaying in several different mediums.
 
-# Building
+# Requirements & Building
 
 You may have to update your compiler in order to support `C++1Y` language features.
 
 To build, install the XCode development tools and place the [SDL development framework](https://www.libsdl.org/release/SDL2-2.0.3.dmg) in `/Library/Frameworks/`.
+
+Then type:
 
     make
 
 # Usage
 
     usage: ans [--version] [--help] [--text] [--ansi] [--xterm256] [--xterm24bit]
-           [file ...]
+           [--png] [--scroller] [file ...] [file ...]
     
     --text            Display as plain-text
     --ansi            Display with ANSi escape sequences
@@ -27,7 +29,7 @@ To build, install the XCode development tools and place the [SDL development fra
 
 ANSI, AnsiEdit, Artworx, ASCII, Binary, Ice Draw, PCBoard, Tundra, and XBin are supported. All color code sequences are matched with their nearest equivalent using the XTerm-256color palette, so results may vary for files that contain 24-bit color information. For best result, use [BlockZone][1] font.
 
-[LodePNG](https://github.com/lvandeve/lodepng) is used for PNG output.
+[LodePNG](https://github.com/lvandeve/lodepng) is used, and already included in the project, for PNG output.
 
 # License
 
