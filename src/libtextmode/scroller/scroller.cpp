@@ -173,7 +173,7 @@ public:
     }
 };
 
-bool display_as_scroller(SDL_Window* window, const size_t& width, const size_t& height, SDL_Renderer* renderer, textmode_t& artwork)
+bool display_as_scroller(SDL_Window* window, const size_t& width, const size_t& height, SDL_Renderer* renderer, textmode_t& artwork, const bool& continuous)
 {
     font_t font = (artwork.image_data.font.length == 0) ? get_font(artwork.options.font_type) : artwork.image_data.font;
     palette_t palette = (artwork.image_data.palette.length == 0) ? get_palette(artwork.options.palette_type) : artwork.image_data.palette;
@@ -195,7 +195,7 @@ bool display_as_scroller(SDL_Window* window, const size_t& width, const size_t& 
     }
     SDL_Rect line_clear = {0, 0, int(width), int(font.height)};
     SDL_Rect render_pos = {0, 0, int(width), int(height)};
-    if(font.height != old_font_height) {
+    if(!continuous || (font.height != old_font_height)) {
         clear_buffers(renderer);
         scroller_y = 0;
         image_y = 0;

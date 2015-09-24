@@ -17,7 +17,8 @@ enum output_type_t {
     xterm256,
     xterm24bit,
     png,
-    scroller
+    scroller,
+    scroller_continuous
 };
 
 struct ans_options_t
@@ -58,6 +59,8 @@ arguments_t get_command_line_arguments(const int& argc, const char* argv[])
                     arguments.options.output_type = output_type_t::png;
                 } else if(argument == "--scroller") {
                     arguments.options.output_type = output_type_t::scroller;
+                } else if(argument == "--scroller-continuous") {
+                    arguments.options.output_type = output_type_t::scroller_continuous;
                 } else {
                     throw std::move(argument);
                 }
@@ -110,12 +113,13 @@ int main(int argc, char const *argv[])
         std::cout << "usage: ans [--version] [--help] [--text] [--ansi] [--xterm256] [--xterm24bit]" << std::endl;
         std::cout << "       [--png] [--scroller] [file ...]" << std::endl;
         std::cout << std::endl;
-        std::cout << "    --text            Display as plain-text" << std::endl;
-        std::cout << "    --ansi            Display with ANSi escape sequences" << std::endl;
-        std::cout << "    --xterm256        Display with XTerm's 256-color palette" << std::endl;
-        std::cout << "    --xterm24bit      Display with 24-Bit escape sequences" << std::endl;
-        std::cout << "    --png             Generate a PNG image" << std::endl;
-        std::cout << "    --scroller        Display artwork as a scrolling display" << std::endl;
+        std::cout << "    --text                 Display as plain-text" << std::endl;
+        std::cout << "    --ansi                 Display with ANSi escape sequences" << std::endl;
+        std::cout << "    --xterm256             Display with XTerm's 256-color palette" << std::endl;
+        std::cout << "    --xterm24bit           Display with 24-Bit escape sequences" << std::endl;
+        std::cout << "    --png                  Generate a PNG image" << std::endl;
+        std::cout << "    --scroller             Display artwork as a scrolling display" << std::endl;
+        std::cout << "    --scroller-continuous  Display artwork as a continuous scrolling display" << std::endl;
         return 0;
     }
     if(arguments.options.version) {
@@ -124,6 +128,7 @@ int main(int argc, char const *argv[])
     }
     switch(arguments.options.output_type) {
     case output_type_t::scroller:
+    case output_type_t::scroller_continuous:
         sdl_init();
         scroller_init(renderer, width, height);
         break;
@@ -153,7 +158,14 @@ int main(int argc, char const *argv[])
                 }
                 break;
             case output_type_t::scroller:
-                if(display_as_scroller(window, width, height, renderer, artwork)) {
+                if(display_as_scroller(window, width, height, renderer, artwork, false)) {
+                    scroller_quit();
+                    sdl_quit();
+                    return 0;
+                }
+                break;
+            case output_type_t::scroller_continuous:
+                if(display_as_scroller(window, width, height, renderer, artwork, true)) {
                     scroller_quit();
                     sdl_quit();
                     return 0;
@@ -168,6 +180,7 @@ int main(int argc, char const *argv[])
     }
     switch(arguments.options.output_type) {
     case output_type_t::scroller:
+    case output_type_t::scroller_continuous:
         scroller_quit();
         sdl_quit();
         break;

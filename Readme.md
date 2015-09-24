@@ -19,12 +19,13 @@ Then type:
     usage: ans [--version] [--help] [--text] [--ansi] [--xterm256] [--xterm24bit]
            [--png] [--scroller] [file ...] [file ...]
     
-    --text            Display as plain-text
-    --ansi            Display with ANSi escape sequences
-    --xterm256        Display with XTerm's 256-color palette
-    --xterm24bit      Display with 24-Bit escape sequences
-    --png             Output as PNG
-    --scroller        Display artwork as a scrolling display
+    --text                 Display as plain-text
+    --ansi                 Display with ANSi escape sequences
+    --xterm256             Display with XTerm's 256-color palette
+    --xterm24bit           Display with 24-Bit escape sequences
+    --png                  Output as PNG
+    --scroller             Display artwork as a scrolling display
+    --scroller-continuous  Display artwork as a continuous scrolling display
 
 
 ANSI, AnsiEdit, Artworx, ASCII, Binary, Ice Draw, PCBoard, Tundra, and XBin are supported. All color code sequences are matched with their nearest equivalent using the XTerm-256color palette, so results may vary for files that contain 24-bit color information. For best result, use [BlockZone][1] font.
