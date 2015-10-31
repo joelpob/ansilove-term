@@ -59,7 +59,7 @@ void screen_t::putc(const uint8_t& code)
 {
     size_t pos = y * image_data.columns + x;
     if(pos >= image_data.data.size()) {
-        image_data.data.resize(pos / image_data.columns + 10'000 * image_data.columns);
+        image_data.data.resize(pos / image_data.columns + 10000 * image_data.columns);
     }
     image_data.data[pos] = block_t{code, current};
     x += 1;

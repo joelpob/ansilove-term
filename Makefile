@@ -1,5 +1,5 @@
 CXX = clang++
-CXXFLAGS = -Wall -c -std=c++1y -Isrc/libtextmode -I/usr/local/include
+CXXFLAGS = -Wall -c -std=c++11 -Isrc/libtextmode -I/usr/local/include
 LDFLAGS = -L/usr/local/lib -lSDL2
 
 OUT = ans

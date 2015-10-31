@@ -6,7 +6,7 @@ Ansilove-Term is a command line tool to render text-mode art files as PNG files,
 
 # Requirements & Building
 
-You may have to update your compiler in order to support `C++1Y` language features.
+You may have to update your compiler in order to support `C++11` language features.
 
 To build, install the XCode development tools and place the [SDL development framework](https://www.libsdl.org/release/SDL2-2.0.3.dmg) in `/Library/Frameworks/`.
 
