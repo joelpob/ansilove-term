@@ -1,6 +1,6 @@
 CXX = clang++
 CXXFLAGS = -Wall -c -std=c++11 -Isrc/libtextmode -I/usr/local/include
-LDFLAGS = -L/usr/local/lib -lSDL2
+LDFLAGS = -L/usr/local/lib
 
 OUT = ans
 
@@ -20,10 +20,8 @@ $(OUT): ans.o\
 		pc_board.o\
 		sauce.o\
 		screen.o\
-		scroller.o\
 		text.o\
 		textmode.o\
-		timer.o\
 		tundra_draw.o\
 		utf8.o\
 		xbin.o
@@ -36,9 +34,6 @@ $(OUT): ans.o\
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 %.o: src/libtextmode/image/%.cpp src/libtextmode/image/%.h
-	$(CXX) $(CXXFLAGS) $< -o $@
-
-%.o: src/libtextmode/scroller/%.cpp src/libtextmode/scroller/%.h
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 %.o: src/libtextmode/term/%.cpp src/libtextmode/term/%.h

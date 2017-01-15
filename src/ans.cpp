@@ -1,13 +1,9 @@
 #include <fstream>
 #include <iostream>
-#include <SDL2/SDL.h>
 #include "textmode.h"
 #include "term/text.h"
 #include "image/image.h"
-#include "scroller/scroller.h"
 
-SDL_Window* window = NULL;
-SDL_Renderer* renderer = NULL;
 size_t width;
 size_t height;
 
@@ -16,9 +12,7 @@ enum output_type_t {
     ansi,
     xterm256,
     xterm24bit,
-    png,
-    scroller,
-    scroller_continuous
+    png
 };
 
 struct ans_options_t
@@ -57,10 +51,6 @@ arguments_t get_command_line_arguments(const int& argc, const char* argv[])
                     arguments.options.output_type = output_type_t::xterm24bit;
                 } else if(argument == "--png") {
                     arguments.options.output_type = output_type_t::png;
-                } else if(argument == "--scroller") {
-                    arguments.options.output_type = output_type_t::scroller;
-                } else if(argument == "--scroller-continuous") {
-                    arguments.options.output_type = output_type_t::scroller_continuous;
                 } else {
                     throw std::move(argument);
                 }
@@ -70,34 +60,6 @@ arguments_t get_command_line_arguments(const int& argc, const char* argv[])
         }
     }
     return arguments;
-}
-
-void sdl_init()
-{
-    SDL_DisplayMode mode;
-    SDL_Init(SDL_INIT_VIDEO);
-    SDL_GetDesktopDisplayMode(0, &mode);
-    window = SDL_CreateWindow("ANSiLove-term", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, mode.w, mode.h, SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_FULLSCREEN);
-    SDL_ShowCursor(SDL_DISABLE);
-    width = size_t(mode.w);
-    height = size_t(mode.h);
-    if(window == NULL) {
-        std::cerr << "SDL2: Could not create window." << std::endl;
-        std::exit(-1);
-    }
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE | SDL_RENDERER_PRESENTVSYNC);
-    if(renderer == NULL) {
-        std::cerr << "SDL2: Could not create renderer." << std::endl;
-        std::exit(-1);
-    }
-}
-
-void sdl_quit()
-{
-    SDL_DestroyRenderer(renderer);
-    SDL_ShowCursor(SDL_ENABLE);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
 }
 
 int main(int argc, char const *argv[])
@@ -111,29 +73,18 @@ int main(int argc, char const *argv[])
     }
     if(arguments.options.help) {
         std::cout << "usage: ans [--version] [--help] [--text] [--ansi] [--xterm256] [--xterm24bit]" << std::endl;
-        std::cout << "       [--png] [--scroller] [file ...]" << std::endl;
+        std::cout << "       [--png] [file ...]" << std::endl;
         std::cout << std::endl;
         std::cout << "    --text                 Display as plain-text" << std::endl;
         std::cout << "    --ansi                 Display with ANSi escape sequences" << std::endl;
         std::cout << "    --xterm256             Display with XTerm's 256-color palette" << std::endl;
         std::cout << "    --xterm24bit           Display with 24-Bit escape sequences" << std::endl;
         std::cout << "    --png                  Generate a PNG image" << std::endl;
-        std::cout << "    --scroller             Display artwork as a scrolling display" << std::endl;
-        std::cout << "    --scroller-continuous  Display artwork as a continuous scrolling display" << std::endl;
         return 0;
     }
     if(arguments.options.version) {
         std::cout << "ans version 0.1" << std::endl;
         return 0;
-    }
-    switch(arguments.options.output_type) {
-    case output_type_t::scroller:
-    case output_type_t::scroller_continuous:
-        sdl_init();
-        scroller_init(renderer, width, height);
-        break;
-    default:
-        break;
     }
     for(auto filename:arguments.files) {
         try {
@@ -157,35 +108,12 @@ int main(int argc, char const *argv[])
                     image.save_as_png(filename + ".png");
                 }
                 break;
-            case output_type_t::scroller:
-                if(display_as_scroller(window, width, height, renderer, artwork, false)) {
-                    scroller_quit();
-                    sdl_quit();
-                    return 0;
-                }
-                break;
-            case output_type_t::scroller_continuous:
-                if(display_as_scroller(window, width, height, renderer, artwork, true)) {
-                    scroller_quit();
-                    sdl_quit();
-                    return 0;
-                }
-                break;
             }
         } catch(file_format_not_recognized_t e) {
             std::cerr << "File format not recognized: " << filename << std::endl;
         } catch(std::exception e) {
             std::cerr << "An error occurred whilst attempting to read " << filename << std::endl;
         }
-    }
-    switch(arguments.options.output_type) {
-    case output_type_t::scroller:
-    case output_type_t::scroller_continuous:
-        scroller_quit();
-        sdl_quit();
-        break;
-    default:
-        break;
     }
     return 0;
 }
