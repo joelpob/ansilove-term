@@ -35,7 +35,7 @@ image_data_t serial_screen_t::get_image_data()
             image_data.data.insert(image_data.data.end(), i.begin(), i.end());
         }
     }
-    return std::move(image_data);
+    return image_data;
 }
 
 screen_t::screen_t(const size_t& columns)
@@ -46,7 +46,7 @@ screen_t::screen_t(const size_t& columns)
 image_data_t screen_t::get_image_data()
 {
     image_data.data.resize(image_data.columns * image_data.rows);
-    return std::move(image_data);
+    return image_data;
 }
 
 void screen_t::use_packed_attribute(const uint8_t& attr)

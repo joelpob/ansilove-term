@@ -77,7 +77,7 @@ pc_board_tokens_t tokenize_pc_board_file(file_t& file, const size_t& file_size)
         throw std::exception();
     }
 
-    return std::move(pc_board_tokens);
+    return pc_board_tokens;
 }
 
 inline bool is_hex(const char& character)

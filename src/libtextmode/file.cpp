@@ -79,7 +79,7 @@ rgb_t file_t::read_rgb()
     rgb.red = read_byte();
     rgb.green = read_byte();
     rgb.blue = read_byte();
-    return std::move(rgb);
+    return rgb;
 }
 
 void file_t::read_palette(std::vector<rgb_t>& palette)

@@ -84,7 +84,7 @@ ansiedit_block_t parse_block(const std::vector<uint8_t>& data)
         block.decompress();
     }
 
-    return std::move(block);
+    return block;
 }
 
 image_data_t decode_display(const ansiedit_block_t& block, options_t& options)
@@ -126,7 +126,7 @@ palette_t decode_ega_palette(const ansiedit_block_t& block)
         ega_palette.push(ega_value);
     }
 
-    return std::move(ega_palette);
+    return ega_palette;
 }
 
 void decode_metadata(const ansiedit_block_t& block, std::string& title, std::string& author, std::string& group)
@@ -188,7 +188,7 @@ image_data_t read_ansiedit_file(file_t& file, const size_t& file_size, options_t
         options.palette_type = palette_type_t::custom;
     }
 
-    return std::move(image_data);
+    return image_data;
 }
 
 ansiedit_t::ansiedit_t(const std::string& filename)

@@ -40,7 +40,7 @@ image_data_t read_ice_draw_file(file_t& file, const size_t& file_size)
 
     image_data.font = font_t(font_bytes);
 
-    return std::move(image_data);
+    return image_data;
 }
 
 ice_draw_t::ice_draw_t(const std::string& filename)

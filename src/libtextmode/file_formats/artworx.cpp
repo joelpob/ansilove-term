@@ -37,7 +37,7 @@ image_data_t read_artworx_file(file_t& file, const size_t& file_size)
     image_data.palette = std::move(ega_palette);
     image_data.font = font_t(font_bytes);
 
-    return std::move(image_data);
+    return image_data;
 }
 
 artworx_t::artworx_t(const std::string& filename)

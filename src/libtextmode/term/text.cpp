@@ -9,7 +9,7 @@ std::vector<lab_t> create_lab_palette(std::vector<rgb_t>& source_rgbs)
     for(auto& rgb_value:source_rgbs) {
         lab_palette.push_back(rgb_value.from_rgb_to_lab());
     }
-    return std::move(lab_palette);
+    return lab_palette;
 }
 
 size_t match_lab(const lab_t& lab_value, const std::vector<lab_t>& lookup_labs)
@@ -37,7 +37,7 @@ std::vector<size_t> create_lookup_references(std::vector<rgb_t>& source_rgbs, st
         references.push_back(match);
     }
 
-    return std::move(references);
+    return references;
 }
 
 std::vector<size_t> create_lookup(textmode_t& textmode, std::vector<rgb_t>& lookup_rgbs)

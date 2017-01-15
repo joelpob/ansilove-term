@@ -344,7 +344,7 @@ std::string cp_437_code_to_string(const uint8_t& cp_437)
         string += char(((unicode >> 6) & 077) | 0200);
         string += char((unicode & 077) | 0200);
     }
-    return std::move(string);
+    return string;
 }
 
 std::string cp_437_to_utf8_string(std::vector<uint8_t>& vector)
@@ -353,5 +353,5 @@ std::string cp_437_to_utf8_string(std::vector<uint8_t>& vector)
     for(auto& i:vector) {
         string += cp_437_code_to_string(i);
     }
-    return std::move(string);
+    return string;
 }

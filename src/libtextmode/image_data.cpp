@@ -13,7 +13,7 @@ rgb_t rgb_t::from_ega_to_rgb()
     rgb.green = (green << 2) | (green >> 4);
     rgb.blue = (blue << 2) | (blue >> 4);
 
-    return std::move(rgb);
+    return rgb;
 }
 
 lab_t rgb_t::from_rgb_to_lab()
@@ -64,7 +64,7 @@ lab_t rgb_t::from_rgb_to_lab()
     lab.red = (116.0 * y) - 16.0;
     lab.green = 500.0 * (x - y);
     lab.blue = 200.0 * (y - z);
-    return std::move(lab);
+    return lab;
 }
 
 bool rgb_t::operator!=(const rgb_t& other)

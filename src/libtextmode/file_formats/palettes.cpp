@@ -22,7 +22,7 @@ palette_t create_palette(std::vector<rgb_t>& ega_palette)
     for(auto& ega_value:ega_palette) {
         palette.push(ega_value);
     }
-    return std::move(palette);
+    return palette;
 }
 
 palette_t create_ansi_palette()

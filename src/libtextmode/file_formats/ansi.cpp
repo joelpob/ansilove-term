@@ -192,7 +192,7 @@ ansi_tokens_t tokenize_ansi_file(file_t& file, const size_t& file_size)
             }
         }
     }
-    return std::move(ansi_tokens);
+    return ansi_tokens;
 }
 
 inline void copy_rgb_values(rgb_t& rgb, const std::vector<size_t>& values)
@@ -350,7 +350,7 @@ image_data_t read_ansi_file(file_t& file, const size_t& file_size, const size_t&
         } else {
             palette_type = palette_type_t::ansi;
         }
-        return std::move(image_data);
+        return image_data;
     }
 }
 

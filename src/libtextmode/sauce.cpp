@@ -100,7 +100,7 @@ std::string ascii_to_string(const std::vector<uint8_t>& vector)
     for(auto& i:vector) {
         string += char(i);
     }
-    return std::move(string);
+    return string;
 }
 
 data_type_t get_data_type(const uint8_t& data_type_value)
@@ -862,7 +862,7 @@ options_t sauce_t::get_options()
     set_default(options.letter_space, letter_space_t::eight_pixels);
     set_default(options.aspect_ratio, aspect_ratio_t::modern_aspect);
     set_default(options.font_type, font_type_t::ibm_vga);
-    return std::move(options);
+    return options;
 }
 
 std::ostream& operator<<(std::ostream& ostream, const uint8_t& uint8)

@@ -139,7 +139,7 @@ image_data_t read_xbin_file(file_t& file, const size_t& file_size, options_t& op
 
     options.non_blink = non_blink_flag ? non_blink_t::on : non_blink_t::off;
 
-    return std::move(image_data);
+    return image_data;
 }
 
 xbin_t::xbin_t(const std::string& filename)

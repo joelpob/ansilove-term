@@ -69,7 +69,7 @@ arguments_t get_command_line_arguments(const int& argc, const char* argv[])
             }
         }
     }
-    return std::move(arguments);
+    return arguments;
 }
 
 void sdl_init()
