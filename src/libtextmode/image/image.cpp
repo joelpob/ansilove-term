@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include "image.h"
 #include "textmode.h"
 #include "../lodepng/lodepng.h"
